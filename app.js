@@ -18,7 +18,7 @@
     signature: document.getElementById("worker-signature"),
   };
 
-  /** @type {{ date: string, start: string, end: string, amount: string, notes: string, off: boolean }[]} */
+  /** @type {{ date: string, start: string, end: string, breakHrs: string, amount: string, notes: string, off: boolean }[]} */
   let days = [];
   /** @type {{ date: string, description: string, amount: string }[]} */
   let expenses = [];
@@ -38,14 +38,28 @@
     return h * 60 + m;
   }
 
-  function calcHours(start, end, off) {
+  function normalizeDay(day) {
+    return {
+      date: day.date,
+      start: day.start || "",
+      end: day.end || "",
+      breakHrs: day.breakHrs ?? "",
+      amount: day.amount || "",
+      notes: day.notes || "",
+      off: Boolean(day.off),
+    };
+  }
+
+  function calcHours(start, end, breakHrs, off) {
     if (off) return 0;
     const s = parseTimeToMinutes(start);
     const e = parseTimeToMinutes(end);
     if (s === null || e === null) return 0;
     let diff = e - s;
     if (diff < 0) diff += 24 * 60; // overnight shift
-    return Math.round((diff / 60) * 100) / 100;
+    const breakMinutes = Math.max(0, (parseFloat(breakHrs) || 0) * 60);
+    const net = Math.max(0, diff - breakMinutes);
+    return Math.round((net / 60) * 100) / 100;
   }
 
   function weekdayShort(iso) {
@@ -87,13 +101,14 @@
     const byDate = Object.fromEntries(days.map((d) => [d.date, d]));
     days = range.map((date) => {
       const existing = byDate[date];
-      if (existing) return existing;
+      if (existing) return normalizeDay(existing);
       const wd = weekdayShort(date);
       const isSunday = wd === "Sun";
       return {
         date,
         start: isSunday ? "" : "09:00",
         end: isSunday ? "" : "20:00",
+        breakHrs: isSunday ? "" : "1",
         amount: "",
         notes: isSunday ? "sunday" : "",
         off: isSunday,
@@ -131,6 +146,7 @@
             <th><span class="zh">日期</span>Date</th>
             <th class="col-start"><span class="zh">开始</span>Start</th>
             <th class="col-end"><span class="zh">结束</span>End</th>
+            <th class="col-break"><span class="zh">休息</span>Break</th>
             <th class="col-hours"><span class="zh">工时</span>Hrs</th>
             <th class="col-amount"><span class="zh">支银</span>Amt</th>
             <th class="col-notes"><span class="zh">签名/备注</span>Notes</th>
@@ -141,7 +157,7 @@
           ${rows
             .map((day, i) => {
               const idx = offset + i;
-              const hrs = calcHours(day.start, day.end, day.off);
+              const hrs = calcHours(day.start, day.end, day.breakHrs, day.off);
               return `
               <tr class="day-row ${day.off ? "off" : ""}" data-idx="${idx}">
                 <td class="date-cell">
@@ -153,6 +169,9 @@
                 </td>
                 <td>
                   <input type="time" data-field="end" value="${day.end}" ${day.off ? "disabled" : ""} />
+                </td>
+                <td>
+                  <input type="number" data-field="breakHrs" min="0" step="0.25" value="${day.breakHrs}" placeholder="0" title="Break hours" ${day.off ? "disabled" : ""} />
                 </td>
                 <td class="hours-cell">${day.off ? "OFF" : hrs.toFixed(2)}</td>
                 <td>
@@ -208,7 +227,7 @@
     let dayAmounts = 0;
 
     for (const day of days) {
-      const h = calcHours(day.start, day.end, day.off);
+      const h = calcHours(day.start, day.end, day.breakHrs, day.off);
       if (!day.off && h > 0) workedDays += 1;
       hours += h;
       if (!day.off) dayAmounts += parseFloat(day.amount) || 0;
@@ -264,7 +283,7 @@
       els.rate.value = data.rate || "";
       els.advance.value = data.advance ?? "0";
       els.signature.value = data.signature || "";
-      days = Array.isArray(data.days) ? data.days : [];
+      days = Array.isArray(data.days) ? data.days.map(normalizeDay) : [];
       expenses = Array.isArray(data.expenses) ? data.expenses : [];
       return true;
     } catch (_) {
@@ -285,7 +304,7 @@
       const wd = weekdayShort(date);
       const day = monthDayLabel(date);
       if (wd === "Sun") {
-        return { date, start: "", end: "", amount: "", notes: "sunday", off: true };
+        return { date, start: "", end: "", breakHrs: "", amount: "", notes: "sunday", off: true };
       }
       // Match handwritten pattern: 16–20,22–27: 9am–8pm; 29–30: 12–10pm; some 10pm ends
       let start = "09:00";
@@ -295,7 +314,7 @@
         start = "12:00";
         end = "22:00";
       }
-      return { date, start, end, amount: "", notes: "", off: false };
+      return { date, start, end, breakHrs: "1", amount: "", notes: "", off: false };
     });
 
     expenses = [{ date: "2025-07-06", description: "TAXI", amount: "21.70" }];
@@ -352,10 +371,12 @@
       if (t.checked) {
         days[idx].start = "";
         days[idx].end = "";
+        days[idx].breakHrs = "";
         if (!days[idx].notes) days[idx].notes = "OFF";
       } else {
         days[idx].start = days[idx].start || "09:00";
         days[idx].end = days[idx].end || "20:00";
+        days[idx].breakHrs = days[idx].breakHrs || "1";
         if (days[idx].notes === "OFF" || days[idx].notes === "sunday") {
           const wd = weekdayShort(days[idx].date);
           days[idx].notes = wd === "Sun" ? "" : days[idx].notes;
@@ -378,8 +399,8 @@
     days[idx][field] = t.value;
 
     // Live hours update without full re-render for smoother typing
-    if (field === "start" || field === "end") {
-      const hrs = calcHours(days[idx].start, days[idx].end, days[idx].off);
+    if (field === "start" || field === "end" || field === "breakHrs") {
+      const hrs = calcHours(days[idx].start, days[idx].end, days[idx].breakHrs, days[idx].off);
       const cell = row.querySelector(".hours-cell");
       if (cell) cell.textContent = days[idx].off ? "OFF" : hrs.toFixed(2);
       updateSummary();
