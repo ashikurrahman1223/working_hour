@@ -2,11 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Work Hours Log </title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Work Hours Log</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,10 +11,10 @@
 
   <header class="topbar no-print">
     <div class="brand">
-      <span class="brand-mark">工</span>
+      <span class="brand-mark">H</span>
       <div>
-        <p class="brand-name">Razib hossain personal Hours Log</p>
-        <p class="brand-sub"></p>
+        <p class="brand-name">Razib Hossain Hours Log</p>
+        <p class="brand-sub">Work hours timesheet</p>
       </div>
     </div>
     <div class="topbar-actions">
@@ -31,19 +28,19 @@
     <section class="sheet-header">
       <div class="header-fields">
         <label class="field name-field">
-          <span>Name </span>
+          <span>Name</span>
           <input type="text" id="worker-name" placeholder="Worker name" autocomplete="name" />
         </label>
         <label class="field">
-          <span>From </span>
+          <span>From</span>
           <input type="date" id="date-from" />
         </label>
         <label class="field">
-          <span>To </span>
+          <span>To</span>
           <input type="date" id="date-to" />
         </label>
         <label class="field rate-field no-print">
-          <span>Rate /hr </span>
+          <span>Rate /hr</span>
           <input type="number" id="hourly-rate" min="0" step="0.01" placeholder="0.00" />
         </label>
       </div>
@@ -54,19 +51,22 @@
       <div class="day-tables" id="day-tables">
         <!-- filled by JS -->
       </div>
+      <div class="table-actions no-print">
+        <button type="button" class="btn btn-small" id="btn-add-day">+ Add day</button>
+      </div>
     </section>
 
     <section class="expenses-section">
       <div class="section-head">
-        <h2>Expenses </h2>
+        <h2>Expenses</h2>
         <button type="button" class="btn btn-small no-print" id="btn-add-expense">+ Add</button>
       </div>
       <table class="expense-table">
         <thead>
           <tr>
-            <th>Date </th>
-            <th>Description </th>
-            <th>Amount </th>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
             <th class="no-print"></th>
           </tr>
         </thead>
@@ -85,7 +85,7 @@
           <strong id="total-hours">0.00</strong>
         </div>
         <div class="summary-row">
-          <span class="summary-label"> Total Advance</span>
+          <span class="summary-label">Total Advance</span>
           <input type="number" id="total-advance" min="0" step="0.01" value="0" />
         </div>
         <div class="summary-row">
