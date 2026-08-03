@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Work Hours Log · 工时记录</title>
+  <title>Work Hours Log </title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Sans+SC:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
@@ -17,7 +17,7 @@
       <span class="brand-mark">工</span>
       <div>
         <p class="brand-name">Razib hossain personal Hours Log</p>
-        <p class="brand-sub">工时记录表</p>
+        <p class="brand-sub"></p>
       </div>
     </div>
     <div class="topbar-actions">
@@ -31,19 +31,19 @@
     <section class="sheet-header">
       <div class="header-fields">
         <label class="field name-field">
-          <span>Name / 姓名</span>
+          <span>Name </span>
           <input type="text" id="worker-name" placeholder="Worker name" autocomplete="name" />
         </label>
         <label class="field">
-          <span>From / 起</span>
+          <span>From </span>
           <input type="date" id="date-from" />
         </label>
         <label class="field">
-          <span>To / 止</span>
+          <span>To </span>
           <input type="date" id="date-to" />
         </label>
         <label class="field rate-field no-print">
-          <span>Rate /hr 时薪</span>
+          <span>Rate /hr </span>
           <input type="number" id="hourly-rate" min="0" step="0.01" placeholder="0.00" />
         </label>
       </div>
@@ -58,15 +58,15 @@
 
     <section class="expenses-section">
       <div class="section-head">
-        <h2>Expenses / 费用</h2>
+        <h2>Expenses </h2>
         <button type="button" class="btn btn-small no-print" id="btn-add-expense">+ Add</button>
       </div>
       <table class="expense-table">
         <thead>
           <tr>
-            <th>Date / 日期</th>
-            <th>Description / 说明</th>
-            <th>Amount / 金额</th>
+            <th>Date </th>
+            <th>Description </th>
+            <th>Amount </th>
             <th class="no-print"></th>
           </tr>
         </thead>
@@ -77,31 +77,31 @@
     <section class="summary-section">
       <div class="summary-grid">
         <div class="summary-row">
-          <span class="summary-label">总共工数 Total Days</span>
+          <span class="summary-label">Total Days</span>
           <strong id="total-days">0</strong>
         </div>
         <div class="summary-row">
-          <span class="summary-label">总工时 Total Hours</span>
+          <span class="summary-label">Total Hours</span>
           <strong id="total-hours">0.00</strong>
         </div>
         <div class="summary-row">
-          <span class="summary-label">共资银 Total Advance</span>
+          <span class="summary-label"> Total Advance</span>
           <input type="number" id="total-advance" min="0" step="0.01" value="0" />
         </div>
         <div class="summary-row">
-          <span class="summary-label">共支银 Total Amount</span>
+          <span class="summary-label">Total Amount</span>
           <strong id="total-amount">$0.00</strong>
         </div>
         <div class="summary-row">
-          <span class="summary-label">费用合计 Expenses</span>
+          <span class="summary-label">Expenses</span>
           <strong id="total-expenses">$0.00</strong>
         </div>
         <div class="summary-row highlight">
-          <span class="summary-label">除支银结存 Sub Total</span>
+          <span class="summary-label">Sub Total</span>
           <strong id="sub-total">$0.00</strong>
         </div>
         <div class="summary-row signature-row">
-          <span class="summary-label">收银人签名 Worker's Signature</span>
+          <span class="summary-label">Worker's Signature</span>
           <input type="text" id="worker-signature" placeholder="Sign here" />
         </div>
       </div>
