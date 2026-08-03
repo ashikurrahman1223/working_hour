@@ -95,13 +95,6 @@
     return true;
   }
 
-  function maybeAddRowAfterEdit(idx) {
-    // After confirming a row, append a blank day if this was the last one
-    if (idx !== days.length - 1) return false;
-    addDayRow({ refreshAfter: false });
-    return true;
-  }
-
   function updateTickCell(row, done) {
     const cell = row.querySelector(".tick-cell");
     if (cell) cell.innerHTML = tickHTML(done);
@@ -443,7 +436,10 @@
     }
 
     const newlyDone = markDone(idx);
-    if (newlyDone) maybeAddRowAfterEdit(idx);
+    if (newlyDone) {
+      updateTickCell(row, true);
+      row.classList.add("is-done");
+    }
     refresh();
   });
 
@@ -459,9 +455,8 @@
 
     const newlyDone = markDone(idx);
     if (newlyDone) {
-      maybeAddRowAfterEdit(idx);
-      refresh();
-      return;
+      updateTickCell(row, true);
+      row.classList.add("is-done");
     }
 
     // Live hours + tick update without full re-render
