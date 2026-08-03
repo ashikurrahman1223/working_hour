@@ -64,12 +64,6 @@
     };
   }
 
-  function nextDateAfter(iso) {
-    const d = new Date(iso + "T12:00:00");
-    d.setDate(d.getDate() + 1);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
-
   function calcHours(start, end, breakHrs, off) {
     if (off) return 0;
     const s = parseTimeToMinutes(start);
@@ -144,32 +138,6 @@
       const isSunday = wd === "Sun";
       return blankDay(date, { off: isSunday });
     });
-  }
-
-  function addDayRow({ refreshAfter = true } = {}) {
-    let date;
-    if (days.length) {
-      date = nextDateAfter(days[days.length - 1].date);
-    } else if (els.from.value) {
-      date = els.from.value;
-    } else {
-      date = new Date().toISOString().slice(0, 10);
-      els.from.value = date;
-    }
-
-    let guard = 0;
-    while (days.some((d) => d.date === date) && guard < 400) {
-      date = nextDateAfter(date);
-      guard += 1;
-    }
-
-    const wd = weekdayShort(date);
-    days.push(blankDay(date, { off: wd === "Sun" }));
-
-    if (!els.from.value || date < els.from.value) els.from.value = date;
-    if (!els.to.value || date > els.to.value) els.to.value = date;
-
-    if (refreshAfter) refresh();
   }
 
   function renderTables() {
@@ -340,36 +308,6 @@
     }
   }
 
-  function loadSample() {
-    els.name.value = "RAZIB";
-    els.from.value = "2025-06-16";
-    els.to.value = "2025-06-30";
-    els.rate.value = "";
-    els.advance.value = "0";
-    els.signature.value = "";
-
-    const range = eachDate(els.from.value, els.to.value);
-    days = range.map((date) => {
-      const wd = weekdayShort(date);
-      const day = monthDayLabel(date);
-      if (wd === "Sun") {
-        return { date, start: "", end: "", breakHrs: "", amount: "", notes: "sunday", off: true, done: true };
-      }
-      // Match handwritten pattern: 16–20,22–27: 9am–8pm; 29–30: 12–10pm; some 10pm ends
-      let start = "09:00";
-      let end = "20:00";
-      if (day === 17 || day === 18 || day === 24 || day === 25 || day === 26) end = "22:00";
-      if (day === 29 || day === 30) {
-        start = "12:00";
-        end = "22:00";
-      }
-      return { date, start, end, breakHrs: "1", amount: "", notes: "", off: false, done: true };
-    });
-
-    expenses = [{ date: "2025-07-06", description: "TAXI", amount: "21.70" }];
-    refresh();
-  }
-
   function clearAll() {
     if (!confirm("Clear all timesheet data?")) return;
     localStorage.removeItem(STORAGE_KEY);
@@ -407,6 +345,19 @@
   });
   els.signature.addEventListener("input", save);
 
+  function syncRowView(row, idx) {
+    const day = days[idx];
+    if (!day || !row) return;
+    const hrs = calcHours(day.start, day.end, day.breakHrs, day.off);
+    const cell = row.querySelector(".hours-cell");
+    if (cell) cell.textContent = day.off ? "OFF" : hrs.toFixed(2);
+    updateTickCell(row, day.done);
+    row.classList.toggle("is-done", day.done);
+    row.classList.toggle("off", day.off);
+    updateSummary();
+    save();
+  }
+
   els.tables.addEventListener("change", (e) => {
     const t = e.target;
     const row = t.closest(".day-row");
@@ -431,16 +382,15 @@
           days[idx].notes = wd === "Sun" ? "" : days[idx].notes;
         }
       }
-    } else {
-      days[idx][field] = t.value;
+      markDone(idx);
+      // OFF changes enabled/disabled inputs — needs a re-render
+      refresh();
+      return;
     }
 
-    const newlyDone = markDone(idx);
-    if (newlyDone) {
-      updateTickCell(row, true);
-      row.classList.add("is-done");
-    }
-    refresh();
+    days[idx][field] = t.value;
+    markDone(idx);
+    syncRowView(row, idx);
   });
 
   els.tables.addEventListener("input", (e) => {
@@ -451,27 +401,17 @@
     const idx = Number(row.dataset.idx);
     const field = t.dataset.field;
     if (!field || !days[idx]) return;
+
     days[idx][field] = t.value;
+    markDone(idx);
 
-    const newlyDone = markDone(idx);
-    if (newlyDone) {
-      updateTickCell(row, true);
-      row.classList.add("is-done");
-    }
-
-    // Live hours + tick update without full re-render
     if (field === "start" || field === "end" || field === "breakHrs") {
-      const hrs = calcHours(days[idx].start, days[idx].end, days[idx].breakHrs, days[idx].off);
-      const cell = row.querySelector(".hours-cell");
-      if (cell) cell.textContent = days[idx].off ? "OFF" : hrs.toFixed(2);
-      updateTickCell(row, days[idx].done);
-      row.classList.toggle("is-done", days[idx].done);
-      updateSummary();
-      save();
-    } else {
-      updateSummary();
-      save();
+      syncRowView(row, idx);
+      return;
     }
+
+    updateSummary();
+    save();
   });
 
   els.expenseBody.addEventListener("input", (e) => {
@@ -502,10 +442,8 @@
     refresh();
   });
 
-  document.getElementById("btn-add-day").addEventListener("click", () => addDayRow());
   document.getElementById("btn-print").addEventListener("click", () => window.print());
   document.getElementById("btn-clear").addEventListener("click", clearAll);
-  document.getElementById("btn-sample").addEventListener("click", loadSample);
 
   // Init
   if (!load()) {
