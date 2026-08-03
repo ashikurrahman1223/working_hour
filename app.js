@@ -3,6 +3,7 @@
 
   const els = {
     name: document.getElementById("worker-name"),
+    fin: document.getElementById("worker-fin"),
     from: document.getElementById("date-from"),
     to: document.getElementById("date-to"),
     rate: document.getElementById("hourly-rate"),
@@ -274,6 +275,7 @@
   function save() {
     const data = {
       name: els.name.value,
+      fin: els.fin.value,
       from: els.from.value,
       to: els.to.value,
       rate: els.rate.value,
@@ -295,6 +297,7 @@
       if (!raw) return false;
       const data = JSON.parse(raw);
       els.name.value = data.name || "";
+      els.fin.value = data.fin || "";
       els.from.value = data.from || "";
       els.to.value = data.to || "";
       els.rate.value = data.rate || "";
@@ -312,6 +315,7 @@
     if (!confirm("Clear all timesheet data?")) return;
     localStorage.removeItem(STORAGE_KEY);
     els.name.value = "";
+    els.fin.value = "";
     els.from.value = "";
     els.to.value = "";
     els.rate.value = "";
@@ -335,6 +339,7 @@
     els.period.textContent = formatPeriod(els.from.value, els.to.value, els.name.value.trim());
     save();
   });
+  els.fin.addEventListener("input", save);
   els.rate.addEventListener("input", () => {
     updateSummary();
     save();
@@ -442,7 +447,231 @@
     refresh();
   });
 
-  document.getElementById("btn-print").addEventListener("click", () => window.print());
+  function formatTime12(time) {
+    if (!time) return "—";
+    const [h, m] = time.split(":").map(Number);
+    if (Number.isNaN(h)) return time;
+    const suffix = h >= 12 ? "pm" : "am";
+    const hour12 = h % 12 || 12;
+    return m === 0 ? `${hour12}${suffix}` : `${hour12}:${pad(m)}${suffix}`;
+  }
+
+  function formatDateShort(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso + "T12:00:00");
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function formatDateFull(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso + "T12:00:00");
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  function buildPrintDayTable(rows, startIndex) {
+    const body = rows
+      .map((day, i) => {
+        const n = startIndex + i + 1;
+        const net = calcHours(day.start, day.end, day.breakHrs, day.off);
+        const brk = day.off ? "—" : day.breakHrs === "" || day.breakHrs == null ? "0" : day.breakHrs;
+        if (day.off) {
+          return `<tr class="off">
+            <td class="num">${n}</td>
+            <td class="date">${formatDateFull(day.date)}</td>
+            <td colspan="3">—</td>
+            <td class="hrs">0.00</td>
+          </tr>`;
+        }
+        return `<tr>
+          <td class="num">${n}</td>
+          <td class="date">${formatDateFull(day.date)}</td>
+          <td>${formatTime12(day.start)}</td>
+          <td>${formatTime12(day.end)}</td>
+          <td>${brk}</td>
+          <td class="hrs">${net.toFixed(2)}</td>
+        </tr>`;
+      })
+      .join("");
+
+    return `<table class="ps-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Break</th>
+          <th>Hrs</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+  }
+
+  function summaryRow(label, value, extraClass = "") {
+    return `<div class="ps-summary-row${extraClass ? ` ${extraClass}` : ""}"><span>${label}</span><span class="val">${value}</span></div>`;
+  }
+
+  function buildPrintSheet() {
+    const root = document.getElementById("print-sheet");
+    if (!root) return;
+
+    const name = els.name.value.trim() || "Worker";
+    const fin = els.fin.value.trim();
+    const period = formatPeriod(els.from.value, els.to.value, "");
+    const rate = parseFloat(els.rate.value) || 0;
+    const advance = parseFloat(els.advance.value) || 0;
+
+    let workedDays = 0;
+    let offDays = 0;
+    let netHours = 0;
+    let breakHours = 0;
+
+    for (const day of days) {
+      const net = calcHours(day.start, day.end, day.breakHrs, day.off);
+      const brk = day.off ? 0 : Math.max(0, parseFloat(day.breakHrs) || 0);
+      netHours += net;
+      breakHours += brk;
+      if (day.off) offDays += 1;
+      else if (net > 0) workedDays += 1;
+    }
+
+    const calendarDays = days.length;
+    const avgHours = workedDays > 0 ? netHours / workedDays : 0;
+    const expenseRows = expenses.filter((e) => e.description || e.amount || e.date);
+    const expenseTotal = expenseRows.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+    const totalAmount = rate > 0 ? netHours * rate : 0;
+    const sub = totalAmount - advance - expenseTotal;
+    const printedAt = new Date().toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+    const mid = Math.ceil(days.length / 2) || 0;
+    const left = days.slice(0, mid);
+    const right = days.slice(mid);
+    const singleCol = days.length > 0 && days.length <= 7;
+    const dayCols = singleCol
+      ? `<div>${buildPrintDayTable(days, 0)}</div>`
+      : [
+          left.length ? `<div>${buildPrintDayTable(left, 0)}</div>` : "",
+          right.length ? `<div>${buildPrintDayTable(right, mid)}</div>` : "",
+        ].join("");
+
+    const summaryRows = [
+      summaryRow("Worked Days", String(workedDays)),
+      summaryRow("OFF Days", String(offDays)),
+      summaryRow("Net Hours", netHours.toFixed(2)),
+      summaryRow("Hourly Rate", rate > 0 ? `${formatMoney(rate)}/hr` : "—"),
+      summaryRow("Advance", formatMoney(advance)),
+      summaryRow("Expenses", formatMoney(expenseTotal)),
+      summaryRow("Sub Total / Balance", formatMoney(sub), "total"),
+    ];
+
+    const expensesHTML = `
+      <div class="ps-expenses">
+        <h3 class="ps-block-title">Expenses (${expenseRows.length})</h3>
+        <table class="ps-expense-table">
+          <thead><tr><th>#</th><th>Date</th><th>Description</th><th>Amount</th></tr></thead>
+          <tbody>
+            ${
+              expenseRows.length
+                ? expenseRows
+                    .map(
+                      (e, i) => `<tr>
+                        <td>${i + 1}</td>
+                        <td>${formatDateShort(e.date)}</td>
+                        <td>${escapeAttr(e.description || "—")}</td>
+                        <td class="amt">${formatMoney(parseFloat(e.amount) || 0)}</td>
+                      </tr>`
+                    )
+                    .join("")
+                : `<tr><td colspan="4" class="empty">No expenses recorded</td></tr>`
+            }
+            <tr class="total-row">
+              <td colspan="3"><strong>Expenses Total</strong></td>
+              <td class="amt"><strong>${formatMoney(expenseTotal)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+
+    const signature = els.signature.value.trim();
+
+    root.className = `print-sheet${singleCol ? " compact-portrait" : ""}`;
+    root.innerHTML = `
+      <header class="ps-header">
+        <div>
+          <h1 class="ps-title">${escapeAttr(name)}</h1>
+          <p class="ps-meta">
+            ${fin ? `FIN: ${escapeAttr(fin)} · ` : ""}${escapeAttr(period || "Work Hours Log")}
+          </p>
+        </div>
+        <div class="ps-stamp">
+          Work Hours Log<br />
+          Name: ${escapeAttr(name)}<br />
+          FIN: ${escapeAttr(fin || "—")}<br />
+          From: ${escapeAttr(formatDateShort(els.from.value))}<br />
+          To: ${escapeAttr(formatDateShort(els.to.value))}<br />
+          Printed: ${escapeAttr(printedAt)}
+        </div>
+      </header>
+
+      <section class="ps-stats">
+        <div><strong>${calendarDays}</strong><span>Days</span></div>
+        <div><strong>${workedDays}</strong><span>Worked</span></div>
+        <div><strong>${offDays}</strong><span>OFF</span></div>
+        <div><strong>${breakHours.toFixed(1)}</strong><span>Break Hrs</span></div>
+        <div><strong>${netHours.toFixed(1)}</strong><span>Net Hrs</span></div>
+        <div><strong>${avgHours.toFixed(1)}</strong><span>Avg/Day</span></div>
+        <div><strong>${rate > 0 ? formatMoney(rate) : "—"}</strong><span>Rate/hr</span></div>
+      </section>
+
+      <section class="ps-days${singleCol ? " single" : ""}">
+        ${dayCols || "<p>No days in range.</p>"}
+      </section>
+
+      <section class="ps-footer">
+        ${expensesHTML}
+        <div>
+          <h3 class="ps-block-title">Payroll Summary</h3>
+          <div class="ps-summary">${summaryRows.join("")}</div>
+          <div class="ps-signs">
+            <div class="ps-sign">
+              Worker's Signature
+              <div class="ps-sign-line">${escapeAttr(signature)}</div>
+            </div>
+            <div class="ps-sign">
+              Supervisor / Inspector
+              <div class="ps-sign-line"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function triggerPrint() {
+    buildPrintSheet();
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  }
+
+  window.addEventListener("beforeprint", buildPrintSheet);
+  document.getElementById("btn-print").addEventListener("click", (e) => {
+    e.preventDefault();
+    triggerPrint();
+  });
   document.getElementById("btn-clear").addEventListener("click", clearAll);
 
   // Init
