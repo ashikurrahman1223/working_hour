@@ -357,23 +357,27 @@ body {
 
 .col-start,
 .col-end {
-  width: 18%;
+  width: 15%;
+}
+
+.col-break {
+  width: 11%;
 }
 
 .col-hours {
-  width: 12%;
+  width: 10%;
 }
 
 .col-amount {
-  width: 14%;
+  width: 12%;
 }
 
 .col-notes {
-  width: 22%;
+  width: 18%;
 }
 
 .col-off {
-  width: 8%;
+  width: 7%;
 }
 
 .expenses-section {
