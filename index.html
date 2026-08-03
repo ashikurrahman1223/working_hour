@@ -11,9 +11,9 @@
 
   <header class="topbar no-print">
     <div class="brand">
-      <span class="brand-mark">H</span>
+      <span class="brand-mark">wc</span>
       <div>
-        <p class="brand-name">Razib Hossain Hours Log</p>
+        <p class="brand-name">Working Hours Calculator</p>
         <p class="brand-sub">Work hours timesheet</p>
       </div>
     </div>
@@ -24,12 +24,22 @@
   </header>
 
   <main class="sheet" id="sheet">
+    <section class="identity-section">
+      <h2 class="section-title">Worker Details</h2>
+      <div class="identity-fields">
+        <label class="field name-field">
+          <span>Full Name</span>
+          <input type="text" id="worker-name" placeholder="Enter full name" autocomplete="name" />
+        </label>
+        <label class="field fin-field">
+          <span>FIN Number</span>
+          <input type="text" id="worker-fin" placeholder="e.g. F1234567N" autocomplete="off" spellcheck="false" />
+        </label>
+      </div>
+    </section>
+
     <section class="sheet-header">
       <div class="header-fields">
-        <label class="field name-field">
-          <span>Name</span>
-          <input type="text" id="worker-name" placeholder="Worker name" autocomplete="name" />
-        </label>
         <label class="field">
           <span>From</span>
           <input type="date" id="date-from" />
@@ -103,6 +113,9 @@
       </div>
     </section>
   </main>
+
+  <!-- Clean print-only document (built on Print) -->
+  <div id="print-sheet" class="print-sheet" aria-hidden="true"></div>
 
   <footer class="page-footer no-print">
     <p>Hours = end − start − break. Mark OFF days to skip them. Print for a clean paper copy.</p>
