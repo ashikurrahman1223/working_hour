@@ -123,7 +123,7 @@
       els.tables.innerHTML = `
         <div class="empty-state">
           <p>Select a date range to build your timesheet.</p>
-          <p>选择日期范围以生成工时表。</p>
+          <p></p>
         </div>`;
       return;
     }
@@ -143,14 +143,14 @@
       <table class="day-table">
         <thead>
           <tr>
-            <th><span class="zh">日期</span>Date</th>
-            <th class="col-start"><span class="zh">开始</span>Start</th>
-            <th class="col-end"><span class="zh">结束</span>End</th>
-            <th class="col-break"><span class="zh">休息</span>Break</th>
-            <th class="col-hours"><span class="zh">工时</span>Hrs</th>
-            <th class="col-amount"><span class="zh">支银</span>Amt</th>
-            <th class="col-notes"><span class="zh">签名/备注</span>Notes</th>
-            <th class="col-off no-print"><span class="zh">休</span>OFF</th>
+            <th><span class="zh"></span>Date</th>
+            <th class="col-start"><span class="zh"></span>Start</th>
+            <th class="col-end"><span class="zh"></span>End</th>
+            <th class="col-break"><span class="zh"></span>Break</th>
+            <th class="col-hours"><span class="zh"></span>Hrs</th>
+            <th class="col-amount"><span class="zh"></span>Amt</th>
+            <th class="col-notes"><span class="zh"></span>Notes</th>
+            <th class="col-off no-print"><span class="zh"></span>OFF</th>
           </tr>
         </thead>
         <tbody>
