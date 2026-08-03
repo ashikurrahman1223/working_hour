@@ -405,12 +405,6 @@ body {
   }
 }
 
-.table-actions {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: flex-start;
-}
-
 .expenses-section {
   margin-top: 1.25rem;
 }
