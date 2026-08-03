@@ -18,7 +18,7 @@
     signature: document.getElementById("worker-signature"),
   };
 
-  /** @type {{ date: string, start: string, end: string, breakHrs: string, amount: string, notes: string, off: boolean }[]} */
+  /** @type {{ date: string, start: string, end: string, breakHrs: string, amount: string, notes: string, off: boolean, done: boolean }[]} */
   let days = [];
   /** @type {{ date: string, description: string, amount: string }[]} */
   let expenses = [];
@@ -47,7 +47,27 @@
       amount: day.amount || "",
       notes: day.notes || "",
       off: Boolean(day.off),
+      done: Boolean(day.done),
     };
+  }
+
+  function blankDay(date, { off = false } = {}) {
+    return {
+      date,
+      start: off ? "" : "09:00",
+      end: off ? "" : "20:00",
+      breakHrs: off ? "" : "1",
+      amount: "",
+      notes: off ? "sunday" : "",
+      off,
+      done: false,
+    };
+  }
+
+  function nextDateAfter(iso) {
+    const d = new Date(iso + "T12:00:00");
+    d.setDate(d.getDate() + 1);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   function calcHours(start, end, breakHrs, off) {
@@ -60,6 +80,31 @@
     const breakMinutes = Math.max(0, (parseFloat(breakHrs) || 0) * 60);
     const net = Math.max(0, diff - breakMinutes);
     return Math.round((net / 60) * 100) / 100;
+  }
+
+  function tickHTML(done) {
+    return done
+      ? `<span class="row-tick is-done" title="Saved" aria-label="Saved">✓</span>`
+      : `<span class="row-tick" aria-hidden="true"></span>`;
+  }
+
+  function markDone(idx) {
+    if (!days[idx]) return false;
+    if (days[idx].done) return false;
+    days[idx].done = true;
+    return true;
+  }
+
+  function maybeAddRowAfterEdit(idx) {
+    // After confirming a row, append a blank day if this was the last one
+    if (idx !== days.length - 1) return false;
+    addDayRow({ refreshAfter: false });
+    return true;
+  }
+
+  function updateTickCell(row, done) {
+    const cell = row.querySelector(".tick-cell");
+    if (cell) cell.innerHTML = tickHTML(done);
   }
 
   function weekdayShort(iso) {
@@ -104,16 +149,34 @@
       if (existing) return normalizeDay(existing);
       const wd = weekdayShort(date);
       const isSunday = wd === "Sun";
-      return {
-        date,
-        start: isSunday ? "" : "09:00",
-        end: isSunday ? "" : "20:00",
-        breakHrs: isSunday ? "" : "1",
-        amount: "",
-        notes: isSunday ? "sunday" : "",
-        off: isSunday,
-      };
+      return blankDay(date, { off: isSunday });
     });
+  }
+
+  function addDayRow({ refreshAfter = true } = {}) {
+    let date;
+    if (days.length) {
+      date = nextDateAfter(days[days.length - 1].date);
+    } else if (els.from.value) {
+      date = els.from.value;
+    } else {
+      date = new Date().toISOString().slice(0, 10);
+      els.from.value = date;
+    }
+
+    let guard = 0;
+    while (days.some((d) => d.date === date) && guard < 400) {
+      date = nextDateAfter(date);
+      guard += 1;
+    }
+
+    const wd = weekdayShort(date);
+    days.push(blankDay(date, { off: wd === "Sun" }));
+
+    if (!els.from.value || date < els.from.value) els.from.value = date;
+    if (!els.to.value || date > els.to.value) els.to.value = date;
+
+    if (refreshAfter) refresh();
   }
 
   function renderTables() {
@@ -123,7 +186,6 @@
       els.tables.innerHTML = `
         <div class="empty-state">
           <p>Select a date range to build your timesheet.</p>
-          <p></p>
         </div>`;
       return;
     }
@@ -140,17 +202,17 @@
 
   function tableHTML(rows, offset) {
     return `
+      <div class="table-scroll">
       <table class="day-table">
         <thead>
           <tr>
-            <th><span class="zh"></span>Date</th>
-            <th class="col-start"><span class="zh"></span>Start</th>
-            <th class="col-end"><span class="zh"></span>End</th>
-            <th class="col-break"><span class="zh"></span>Break</th>
-            <th class="col-hours"><span class="zh"></span>Hrs</th>
-            <th class="col-amount"><span class="zh"></span>Amt</th>
-            <th class="col-notes"><span class="zh"></span>Notes</th>
-            <th class="col-off no-print"><span class="zh"></span>OFF</th>
+            <th>Date</th>
+            <th class="col-start">Start</th>
+            <th class="col-end">End</th>
+            <th class="col-break">Break</th>
+            <th class="col-hours">Hrs</th>
+            <th class="col-tick">✓</th>
+            <th class="col-off no-print">OFF</th>
           </tr>
         </thead>
         <tbody>
@@ -159,37 +221,34 @@
               const idx = offset + i;
               const hrs = calcHours(day.start, day.end, day.breakHrs, day.off);
               return `
-              <tr class="day-row ${day.off ? "off" : ""}" data-idx="${idx}">
-                <td class="date-cell">
-                  ${monthDayLabel(day.date)}
+              <tr class="day-row ${day.off ? "off" : ""} ${day.done ? "is-done" : ""}" data-idx="${idx}">
+                <td class="date-cell" data-label="Date">
+                  <span class="date-num">${monthDayLabel(day.date)}</span>
                   <small>${weekdayShort(day.date)}</small>
                 </td>
-                <td>
+                <td data-label="Start">
                   <input type="time" data-field="start" value="${day.start}" ${day.off ? "disabled" : ""} />
                 </td>
-                <td>
+                <td data-label="End">
                   <input type="time" data-field="end" value="${day.end}" ${day.off ? "disabled" : ""} />
                 </td>
-                <td>
-                  <input type="number" data-field="breakHrs" min="0" step="0.25" value="${day.breakHrs}" placeholder="0" title="Break hours" ${day.off ? "disabled" : ""} />
+                <td data-label="Break (hrs)">
+                  <input type="number" data-field="breakHrs" min="0" step="0.25" inputmode="decimal" value="${day.breakHrs}" placeholder="0" title="Break hours" ${day.off ? "disabled" : ""} />
                 </td>
-                <td class="hours-cell">${day.off ? "OFF" : hrs.toFixed(2)}</td>
-                <td>
-                  <input type="number" data-field="amount" min="0" step="0.01" value="${day.amount}" placeholder="—" ${day.off ? "disabled" : ""} />
-                </td>
-                <td>
-                  <input type="text" class="notes-input" data-field="notes" value="${escapeAttr(day.notes)}" placeholder="—" />
-                </td>
-                <td class="no-print">
+                <td class="hours-cell" data-label="Hours">${day.off ? "OFF" : hrs.toFixed(2)}</td>
+                <td class="tick-cell" data-label="Saved">${tickHTML(day.done)}</td>
+                <td class="off-cell no-print" data-label="OFF">
                   <label class="off-toggle">
                     <input type="checkbox" data-field="off" ${day.off ? "checked" : ""} />
+                    <span class="off-text">OFF</span>
                   </label>
                 </td>
               </tr>`;
             })
             .join("")}
         </tbody>
-      </table>`;
+      </table>
+      </div>`;
   }
 
   function escapeAttr(str) {
@@ -224,20 +283,17 @@
   function updateSummary() {
     let workedDays = 0;
     let hours = 0;
-    let dayAmounts = 0;
 
     for (const day of days) {
       const h = calcHours(day.start, day.end, day.breakHrs, day.off);
       if (!day.off && h > 0) workedDays += 1;
       hours += h;
-      if (!day.off) dayAmounts += parseFloat(day.amount) || 0;
     }
 
     const rate = parseFloat(els.rate.value) || 0;
     const advance = parseFloat(els.advance.value) || 0;
     const expenseTotal = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-    const fromHours = rate > 0 ? hours * rate : 0;
-    const totalAmount = fromHours + dayAmounts;
+    const totalAmount = rate > 0 ? hours * rate : 0;
     const sub = totalAmount - advance - expenseTotal;
 
     els.totalDays.textContent = String(workedDays);
@@ -304,7 +360,7 @@
       const wd = weekdayShort(date);
       const day = monthDayLabel(date);
       if (wd === "Sun") {
-        return { date, start: "", end: "", breakHrs: "", amount: "", notes: "sunday", off: true };
+        return { date, start: "", end: "", breakHrs: "", amount: "", notes: "sunday", off: true, done: true };
       }
       // Match handwritten pattern: 16–20,22–27: 9am–8pm; 29–30: 12–10pm; some 10pm ends
       let start = "09:00";
@@ -314,7 +370,7 @@
         start = "12:00";
         end = "22:00";
       }
-      return { date, start, end, breakHrs: "1", amount: "", notes: "", off: false };
+      return { date, start, end, breakHrs: "1", amount: "", notes: "", off: false, done: true };
     });
 
     expenses = [{ date: "2025-07-06", description: "TAXI", amount: "21.70" }];
@@ -385,6 +441,9 @@
     } else {
       days[idx][field] = t.value;
     }
+
+    const newlyDone = markDone(idx);
+    if (newlyDone) maybeAddRowAfterEdit(idx);
     refresh();
   });
 
@@ -398,11 +457,20 @@
     if (!field || !days[idx]) return;
     days[idx][field] = t.value;
 
-    // Live hours update without full re-render for smoother typing
+    const newlyDone = markDone(idx);
+    if (newlyDone) {
+      maybeAddRowAfterEdit(idx);
+      refresh();
+      return;
+    }
+
+    // Live hours + tick update without full re-render
     if (field === "start" || field === "end" || field === "breakHrs") {
       const hrs = calcHours(days[idx].start, days[idx].end, days[idx].breakHrs, days[idx].off);
       const cell = row.querySelector(".hours-cell");
       if (cell) cell.textContent = days[idx].off ? "OFF" : hrs.toFixed(2);
+      updateTickCell(row, days[idx].done);
+      row.classList.toggle("is-done", days[idx].done);
       updateSummary();
       save();
     } else {
@@ -439,6 +507,7 @@
     refresh();
   });
 
+  document.getElementById("btn-add-day").addEventListener("click", () => addDayRow());
   document.getElementById("btn-print").addEventListener("click", () => window.print());
   document.getElementById("btn-clear").addEventListener("click", clearAll);
   document.getElementById("btn-sample").addEventListener("click", loadSample);
