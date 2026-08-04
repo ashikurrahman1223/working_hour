@@ -2,6 +2,7 @@
   const STORAGE_KEY = "work-hours-log-v1";
 
   const els = {
+    company: document.getElementById("company-name"),
     name: document.getElementById("worker-name"),
     fin: document.getElementById("worker-fin"),
     from: document.getElementById("date-from"),
@@ -17,6 +18,9 @@
     totalExpenses: document.getElementById("total-expenses"),
     subTotal: document.getElementById("sub-total"),
     signature: document.getElementById("worker-signature"),
+    supervisor: document.getElementById("supervisor-signature"),
+    supervisorCompany: document.getElementById("supervisor-company"),
+    companyBottom: document.getElementById("company-bottom"),
   };
 
   /** @type {{ date: string, start: string, end: string, breakHrs: string, amount: string, notes: string, off: boolean, done: boolean }[]} */
@@ -141,8 +145,22 @@
     });
   }
 
+  function updateCompanyBottom() {
+    if (!els.companyBottom) return;
+    const company = els.company.value.trim();
+    els.companyBottom.textContent = company || "—";
+  }
+
+  function updatePeriodLabel() {
+    const company = els.company.value.trim();
+    const name = els.name.value.trim();
+    const who = [company, name].filter(Boolean).join(" · ");
+    els.period.textContent = formatPeriod(els.from.value, els.to.value, who);
+    updateCompanyBottom();
+  }
+
   function renderTables() {
-    els.period.textContent = formatPeriod(els.from.value, els.to.value, els.name.value.trim());
+    updatePeriodLabel();
 
     if (!days.length) {
       els.tables.innerHTML = `
@@ -242,10 +260,9 @@
       .join("");
   }
 
-  function updateSummary() {
+  function getSummaryNumbers() {
     let workedDays = 0;
     let hours = 0;
-
     for (const day of days) {
       const h = calcHours(day.start, day.end, day.breakHrs, day.off);
       if (!day.off && h > 0) workedDays += 1;
@@ -256,13 +273,24 @@
     const advance = parseFloat(els.advance.value) || 0;
     const expenseTotal = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     const totalAmount = rate > 0 ? hours * rate : 0;
-    const sub = totalAmount - advance - expenseTotal;
+    const sub = totalAmount - advance + expenseTotal;
 
-    els.totalDays.textContent = String(workedDays);
-    els.totalHours.textContent = hours.toFixed(2);
-    els.totalAmount.textContent = formatMoney(totalAmount);
-    els.totalExpenses.textContent = formatMoney(expenseTotal);
-    els.subTotal.textContent = formatMoney(sub);
+    return {
+      totalDays: workedDays,
+      totalHours: Math.round(hours * 100) / 100,
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      totalExpenses: Math.round(expenseTotal * 100) / 100,
+      subTotal: Math.round(sub * 100) / 100,
+    };
+  }
+
+  function updateSummary() {
+    const summary = getSummaryNumbers();
+    els.totalDays.textContent = String(summary.totalDays);
+    els.totalHours.textContent = summary.totalHours.toFixed(2);
+    els.totalAmount.textContent = formatMoney(summary.totalAmount);
+    els.totalExpenses.textContent = formatMoney(summary.totalExpenses);
+    els.subTotal.textContent = formatMoney(summary.subTotal);
   }
 
   function refresh() {
@@ -272,8 +300,9 @@
     save();
   }
 
-  function save() {
-    const data = {
+  function buildPayload() {
+    return {
+      company: els.company.value,
       name: els.name.value,
       fin: els.fin.value,
       from: els.from.value,
@@ -281,9 +310,16 @@
       rate: els.rate.value,
       advance: els.advance.value,
       signature: els.signature.value,
+      supervisor: els.supervisor.value,
+      supervisorCompany: els.supervisorCompany.value,
       days,
       expenses,
+      summary: getSummaryNumbers(),
     };
+  }
+
+  function save() {
+    const data = buildPayload();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (_) {
@@ -296,6 +332,7 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const data = JSON.parse(raw);
+      els.company.value = data.company || "";
       els.name.value = data.name || "";
       els.fin.value = data.fin || "";
       els.from.value = data.from || "";
@@ -303,8 +340,11 @@
       els.rate.value = data.rate || "";
       els.advance.value = data.advance ?? "0";
       els.signature.value = data.signature || "";
+      els.supervisor.value = data.supervisor || "";
+      els.supervisorCompany.value = data.supervisorCompany || "";
       days = Array.isArray(data.days) ? data.days.map(normalizeDay) : [];
       expenses = Array.isArray(data.expenses) ? data.expenses : [];
+      updateCompanyBottom();
       return true;
     } catch (_) {
       return false;
@@ -314,6 +354,7 @@
   function clearAll() {
     if (!confirm("Clear all timesheet data?")) return;
     localStorage.removeItem(STORAGE_KEY);
+    els.company.value = "";
     els.name.value = "";
     els.fin.value = "";
     els.from.value = "";
@@ -321,6 +362,8 @@
     els.rate.value = "";
     els.advance.value = "0";
     els.signature.value = "";
+    els.supervisor.value = "";
+    els.supervisorCompany.value = "";
     days = [];
     expenses = [];
     refresh();
@@ -335,8 +378,12 @@
     mergeDaysFromRange();
     refresh();
   });
+  els.company.addEventListener("input", () => {
+    updatePeriodLabel();
+    save();
+  });
   els.name.addEventListener("input", () => {
-    els.period.textContent = formatPeriod(els.from.value, els.to.value, els.name.value.trim());
+    updatePeriodLabel();
     save();
   });
   els.fin.addEventListener("input", save);
@@ -349,6 +396,8 @@
     save();
   });
   els.signature.addEventListener("input", save);
+  els.supervisor.addEventListener("input", save);
+  els.supervisorCompany.addEventListener("input", save);
 
   function syncRowView(row, idx) {
     const day = days[idx];
@@ -522,6 +571,7 @@
     const root = document.getElementById("print-sheet");
     if (!root) return;
 
+    const company = els.company.value.trim();
     const name = els.name.value.trim() || "Worker";
     const fin = els.fin.value.trim();
     const period = formatPeriod(els.from.value, els.to.value, "");
@@ -547,7 +597,7 @@
     const expenseRows = expenses.filter((e) => e.description || e.amount || e.date);
     const expenseTotal = expenseRows.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     const totalAmount = rate > 0 ? netHours * rate : 0;
-    const sub = totalAmount - advance - expenseTotal;
+    const sub = totalAmount - advance + expenseTotal;
     const printedAt = new Date().toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -572,8 +622,9 @@
       summaryRow("OFF Days", String(offDays)),
       summaryRow("Net Hours", netHours.toFixed(2)),
       summaryRow("Hourly Rate", rate > 0 ? `${formatMoney(rate)}/hr` : "—"),
+      summaryRow("Total Amount", formatMoney(totalAmount)),
       summaryRow("Advance", formatMoney(advance)),
-      summaryRow("Expenses", formatMoney(expenseTotal)),
+      summaryRow("Expenses (+)", formatMoney(expenseTotal)),
       summaryRow("Sub Total / Balance", formatMoney(sub), "total"),
     ];
 
@@ -606,19 +657,23 @@
       </div>`;
 
     const signature = els.signature.value.trim();
+    const supervisor = els.supervisor.value.trim();
+    const supervisorCompany = els.supervisorCompany.value.trim();
 
     root.className = `print-sheet${singleCol ? " compact-portrait" : ""}`;
     root.innerHTML = `
       <header class="ps-header">
         <div>
+          ${company ? `<p class="ps-company">${escapeAttr(company)}</p>` : ""}
           <h1 class="ps-title">${escapeAttr(name)}</h1>
           <p class="ps-meta">
-            ${fin ? `FIN: ${escapeAttr(fin)} · ` : ""}${escapeAttr(period || "Work Hours Log")}
+            ${fin ? `FIN: ${escapeAttr(fin)} · ` : ""}${escapeAttr(period || "Working Hours Logs")}
           </p>
         </div>
         <div class="ps-stamp">
-          Work Hours Log<br />
-          Name: ${escapeAttr(name)}<br />
+          Working Hours Logs<br />
+          Company: ${escapeAttr(company || "—")}<br />
+          Worker: ${escapeAttr(name)}<br />
           FIN: ${escapeAttr(fin || "—")}<br />
           From: ${escapeAttr(formatDateShort(els.from.value))}<br />
           To: ${escapeAttr(formatDateShort(els.to.value))}<br />
@@ -651,8 +706,16 @@
               <div class="ps-sign-line">${escapeAttr(signature)}</div>
             </div>
             <div class="ps-sign">
-              Supervisor / Inspector
-              <div class="ps-sign-line"></div>
+              Company Name
+              <div class="ps-sign-line ps-company-line">${escapeAttr(company || "—")}</div>
+            </div>
+            <div class="ps-sign">
+              Supervisor Signature
+              <div class="ps-sign-line">${escapeAttr(supervisor)}</div>
+            </div>
+            <div class="ps-sign">
+              Supervisor Company Name
+              <div class="ps-sign-line ps-company-line">${escapeAttr(supervisorCompany || "—")}</div>
             </div>
           </div>
         </div>
