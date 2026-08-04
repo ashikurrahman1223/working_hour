@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Work Hours Log</title>
+  <title>Working Hours Logs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,9 +14,9 @@
 
   <header class="topbar no-print">
     <div class="brand">
-      <span class="brand-mark">wc</span>
+      <span class="brand-mark">WH</span>
       <div>
-        <p class="brand-name">Working Hours Calculator</p>
+        <p class="brand-name">Working Hours Logs</p>
         <p class="brand-sub">Work hours timesheet</p>
       </div>
     </div>
@@ -27,8 +30,12 @@
     <section class="identity-section">
       <h2 class="section-title">Worker Details</h2>
       <div class="identity-fields">
+        <label class="field company-field">
+          <span>Company Name</span>
+          <input type="text" id="company-name" placeholder="Enter company name" autocomplete="organization" />
+        </label>
         <label class="field name-field">
-          <span>Full Name</span>
+          <span>Worker Name</span>
           <input type="text" id="worker-name" placeholder="Enter full name" autocomplete="name" />
         </label>
         <label class="field fin-field">
@@ -109,6 +116,18 @@
         <div class="summary-row signature-row">
           <span class="summary-label">Worker's Signature</span>
           <input type="text" id="worker-signature" placeholder="Sign here" />
+        </div>
+        <div class="summary-row signature-row company-sign-row">
+          <span class="summary-label">Company Name</span>
+          <strong id="company-bottom" class="company-bottom-value">—</strong>
+        </div>
+        <div class="summary-row signature-row">
+          <span class="summary-label">Supervisor Signature</span>
+          <input type="text" id="supervisor-signature" placeholder="Sign here" />
+        </div>
+        <div class="summary-row signature-row">
+          <span class="summary-label">Supervisor Company Name</span>
+          <input type="text" id="supervisor-company" placeholder="Enter company name" />
         </div>
       </div>
     </section>
