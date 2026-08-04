@@ -845,13 +845,13 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 8mm 10mm;
+    margin: 8mm 9mm;
   }
 
   html,
   body {
     background: #fff !important;
-    color: #000 !important;
+    color: #111 !important;
     height: auto !important;
     overflow: visible !important;
     font-family: "Times New Roman", Times, serif !important;
@@ -869,13 +869,13 @@ body {
   }
 
   .print-sheet {
-    display: block !important;
+    display: grid !important;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 0.45rem;
     width: 100%;
-    color: #000;
-  }
-
-  .print-sheet.compact-portrait {
-    /* used when few days — browser may still use landscape; content stays readable */
+    color: #111;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .ps-header {
@@ -883,83 +883,105 @@ body {
     justify-content: space-between;
     align-items: flex-end;
     gap: 1rem;
-    border-bottom: 2.5px solid #000;
-    padding-bottom: 0.45rem;
-    margin-bottom: 0.65rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid #111;
+  }
+
+  .ps-identity {
+    min-width: 0;
   }
 
   .ps-company {
-    margin: 0 0 0.05rem;
-    font-size: 0.7rem;
+    margin: 0 0 0.1rem;
+    font-size: 0.68rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: #333;
   }
 
   .ps-title {
     margin: 0;
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
     text-transform: uppercase;
   }
 
   .ps-meta {
-    margin: 0.15rem 0 0;
-    font-size: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.2rem 0 0;
+    font-size: 0.7rem;
+    color: #333;
+  }
+
+  .ps-dot {
+    opacity: 0.5;
   }
 
   .ps-stamp {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.12rem;
     text-align: right;
-    font-size: 0.68rem;
-    line-height: 1.4;
+    font-size: 0.65rem;
+    line-height: 1.3;
+    color: #333;
     white-space: nowrap;
+  }
+
+  .ps-stamp strong {
+    font-size: 0.72rem;
+    color: #111;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .ps-stats {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 0.3rem;
-    margin-bottom: 0.55rem;
-    border: 1px solid #222;
-    padding: 0.35rem 0.4rem;
-    background: #f7f7f7 !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.35rem;
   }
 
-  .ps-stats div {
+  .ps-stats > div {
     text-align: center;
-    border-right: 1px solid #ccc;
-  }
-
-  .ps-stats div:last-child {
-    border-right: none;
+    padding: 0.35rem 0.2rem;
+    border: 1px solid #ccc;
+    background: #fafafa !important;
   }
 
   .ps-stats strong {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
 
   .ps-stats span {
     display: block;
-    font-size: 0.58rem;
+    margin-top: 0.1rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: #333;
+    color: #555;
+  }
+
+  .ps-stat-balance {
+    background: #efefef !important;
+    border-color: #111 !important;
   }
 
   .ps-days {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.45rem;
-    margin-bottom: 0.55rem;
-  }
-
-  .ps-days.single {
-    grid-template-columns: 1fr;
-    max-width: 70%;
+    gap: 0.55rem;
+    align-content: start;
+    min-height: 0;
   }
 
   .ps-table {
@@ -970,34 +992,41 @@ body {
 
   .ps-table th,
   .ps-table td {
-    border: 1px solid #222;
-    padding: 0.14rem 0.22rem;
+    border: 1px solid #bbb;
+    padding: 0.22rem 0.28rem;
     text-align: center;
     vertical-align: middle;
   }
 
   .ps-table th {
-    background: #e8e8e8 !important;
+    background: #f0f0f0 !important;
+    border-color: #999;
+    font-size: 0.58rem;
     font-weight: 700;
-    font-size: 0.62rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
   }
 
   .ps-table .num {
-    width: 1.4rem;
-    color: #444;
+    width: 1.35rem;
+    color: #666;
   }
 
   .ps-table .date {
-    font-weight: 700;
     text-align: left;
+    font-weight: 700;
     white-space: nowrap;
-    padding-left: 0.3rem;
+  }
+
+  .ps-table .date small {
+    font-weight: 500;
+    color: #666;
+    margin-left: 0.15rem;
   }
 
   .ps-table tr.off td {
-    background: #f2f2f2 !important;
+    background: #f5f5f5 !important;
+    color: #666;
     font-style: italic;
   }
 
@@ -1007,36 +1036,52 @@ body {
 
   .ps-footer {
     display: grid;
-    grid-template-columns: 1.15fr 0.95fr;
-    gap: 0.65rem;
+    grid-template-columns: 1.1fr 0.95fr;
+    gap: 0.75rem;
     align-items: start;
-    break-inside: avoid;
+    padding-top: 0.2rem;
+    border-top: 1px solid #ddd;
+  }
+
+  .ps-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .ps-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .ps-block-title {
-    margin: 0 0 0.25rem;
-    font-size: 0.72rem;
+    margin: 0;
+    font-size: 0.62rem;
     font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    color: #333;
   }
 
   .ps-expense-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
   }
 
   .ps-expense-table th,
   .ps-expense-table td {
-    border: 1px solid #222;
-    padding: 0.16rem 0.28rem;
+    border: 1px solid #bbb;
+    padding: 0.18rem 0.28rem;
     text-align: left;
   }
 
   .ps-expense-table th {
-    background: #e8e8e8 !important;
-    font-size: 0.6rem;
+    background: #f0f0f0 !important;
+    font-size: 0.55rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
@@ -1048,26 +1093,25 @@ body {
 
   .ps-expense-table td.empty {
     text-align: center;
-    color: #555;
+    color: #777;
     font-style: italic;
   }
 
   .ps-expense-table tr.total-row td {
-    background: #f0f0f0 !important;
+    background: #f3f3f3 !important;
   }
 
   .ps-summary {
-    border: 2px solid #000;
-    width: 100%;
+    border: 1.5px solid #111;
   }
 
   .ps-summary-row {
     display: flex;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.2rem 0.45rem;
-    border-bottom: 1px solid #333;
-    font-size: 0.72rem;
+    gap: 0.75rem;
+    padding: 0.18rem 0.4rem;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.68rem;
   }
 
   .ps-summary-row:last-child {
@@ -1075,9 +1119,9 @@ body {
   }
 
   .ps-summary-row.total {
-    background: #e8e8e8 !important;
+    background: #efefef !important;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
   }
 
   .ps-summary-row .val {
@@ -1089,54 +1133,42 @@ body {
   .ps-signs {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.35rem 0.55rem;
-    margin-top: 0.4rem;
-    max-width: none;
-    width: 100%;
+    gap: 0.45rem 0.65rem;
+    margin-top: 0.1rem;
   }
 
-  .ps-sign {
-    font-size: 0.55rem;
+  .ps-sign span {
+    display: block;
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    font-weight: 600;
-    color: #333;
-    line-height: 1.2;
+    color: #555;
   }
 
   .ps-sign-line {
-    margin-top: 0.08rem;
-    border-bottom: 1px solid #000;
-    min-height: 0.95rem;
-    font-size: 0.7rem;
-    font-weight: 400;
-    text-transform: none;
-    letter-spacing: 0;
-    padding: 0 0 0.05rem;
-    line-height: 1.15;
+    margin-top: 0.15rem;
+    min-height: 1.05rem;
+    padding-bottom: 0.08rem;
+    border-bottom: 1px solid #111;
+    font-size: 0.72rem;
+    line-height: 1.1;
   }
 
   .ps-sign-line:not(.ps-company-line) {
     font-family: "Great Vibes", "Segoe Script", "Apple Chancery", cursive;
-    font-size: 1.15rem;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-    min-height: 1.15rem;
-    line-height: 1.1;
+    font-size: 1.05rem;
   }
 
   .ps-company-line {
     font-family: "Times New Roman", Times, serif;
+    font-size: 0.68rem;
     font-weight: 700;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
-    font-size: 0.65rem;
   }
 
   .ps-note {
-    margin: 0.4rem 0 0;
-    font-size: 0.6rem;
-    color: #333;
-    line-height: 1.35;
+    display: none;
   }
 }
