@@ -881,70 +881,94 @@ body {
   .ps-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 1rem;
-    padding-bottom: 0.35rem;
+    padding-bottom: 0.4rem;
     border-bottom: 2px solid #111;
   }
 
   .ps-identity {
     min-width: 0;
+    flex: 1;
+  }
+
+  .ps-app {
+    margin: 0 0 0.15rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #666;
   }
 
   .ps-company {
     margin: 0 0 0.1rem;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     color: #333;
   }
 
   .ps-title {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.25rem;
     font-weight: 700;
     letter-spacing: 0.01em;
     line-height: 1.15;
     text-transform: uppercase;
   }
 
-  .ps-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.25rem;
-    margin: 0.2rem 0 0;
-    font-size: 0.7rem;
-    color: #333;
+  .ps-details {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, auto));
+    gap: 0.35rem 1rem;
+    margin-top: 0.35rem;
   }
 
-  .ps-dot {
-    opacity: 0.5;
+  .ps-details div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+  }
+
+  .ps-details span {
+    font-size: 0.52rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #666;
+  }
+
+  .ps-details strong {
+    font-size: 0.72rem;
+    font-weight: 700;
   }
 
   .ps-stamp {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 0.12rem;
-    text-align: right;
-    font-size: 0.65rem;
-    line-height: 1.3;
+    min-width: 11rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #ccc;
+    background: #fafafa !important;
+    font-size: 0.62rem;
+    line-height: 1.35;
     color: #333;
-    white-space: nowrap;
   }
 
   .ps-stamp strong {
-    font-size: 0.72rem;
+    margin-bottom: 0.1rem;
+    font-size: 0.58rem;
     color: #111;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
   .ps-stats {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 0.35rem;
   }
 
