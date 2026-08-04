@@ -581,10 +581,19 @@
       else if (net > 0) workedDays += 1;
     }
 
+    const calendarDays = days.length;
+    const avgHours = workedDays > 0 ? netHours / workedDays : 0;
     const expenseRows = expenses.filter((e) => e.description || e.amount || e.date);
     const expenseTotal = expenseRows.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     const totalAmount = rate > 0 ? netHours * rate : 0;
     const sub = totalAmount - advance + expenseTotal;
+    const printedAt = new Date().toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
 
     const mid = Math.ceil(days.length / 2) || 0;
     const left = days.slice(0, mid);
@@ -641,23 +650,33 @@
     root.innerHTML = `
       <header class="ps-header">
         <div class="ps-identity">
+          <p class="ps-app">Working Hours Logs</p>
           ${company ? `<p class="ps-company">${escapeAttr(company)}</p>` : ""}
           <h1 class="ps-title">${escapeAttr(name)}</h1>
-          <p class="ps-meta">${fin ? `<span>FIN ${escapeAttr(fin)}</span>` : ""}${fin ? "<span class='ps-dot'>·</span>" : ""}<span>${escapeAttr(period || "Working Hours Logs")}</span></p>
+          <div class="ps-details">
+            <div><span>FIN</span><strong>${escapeAttr(fin || "—")}</strong></div>
+            <div><span>From</span><strong>${escapeAttr(formatDateShort(els.from.value))}</strong></div>
+            <div><span>To</span><strong>${escapeAttr(formatDateShort(els.to.value))}</strong></div>
+            <div><span>Period</span><strong>${escapeAttr(period || "—")}</strong></div>
+          </div>
         </div>
         <div class="ps-stamp">
-          <strong>Working Hours Logs</strong>
-          <span>${escapeAttr(formatDateShort(els.from.value))} – ${escapeAttr(formatDateShort(els.to.value))}</span>
+          <strong>Worker Details</strong>
+          <span>Company: ${escapeAttr(company || "—")}</span>
+          <span>Worker: ${escapeAttr(name)}</span>
+          <span>FIN: ${escapeAttr(fin || "—")}</span>
+          <span>Printed: ${escapeAttr(printedAt)}</span>
         </div>
       </header>
 
       <section class="ps-stats">
+        <div><strong>${calendarDays}</strong><span>Days</span></div>
         <div><strong>${workedDays}</strong><span>Worked</span></div>
         <div><strong>${offDays}</strong><span>OFF</span></div>
+        <div><strong>${breakHours.toFixed(1)}</strong><span>Break Hrs</span></div>
         <div><strong>${netHours.toFixed(1)}</strong><span>Net Hrs</span></div>
-        <div><strong>${breakHours.toFixed(1)}</strong><span>Break</span></div>
-        <div><strong>${rate > 0 ? formatMoney(rate) : "—"}</strong><span>Rate</span></div>
-        <div><strong>${formatMoney(totalAmount)}</strong><span>Amount</span></div>
+        <div><strong>${avgHours.toFixed(1)}</strong><span>Avg/Day</span></div>
+        <div><strong>${rate > 0 ? formatMoney(rate) : "—"}</strong><span>Rate/hr</span></div>
         <div class="ps-stat-balance"><strong>${formatMoney(sub)}</strong><span>Balance</span></div>
       </section>
 
