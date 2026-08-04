@@ -512,17 +512,6 @@
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   }
 
-  function formatDateFull(iso) {
-    if (!iso) return "—";
-    const d = new Date(iso + "T12:00:00");
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  }
-
   function buildPrintDayTable(rows, startIndex) {
     const body = rows
       .map((day, i) => {
@@ -532,14 +521,14 @@
         if (day.off) {
           return `<tr class="off">
             <td class="num">${n}</td>
-            <td class="date">${formatDateFull(day.date)}</td>
+            <td class="date">${monthDayLabel(day.date)} <small>${weekdayShort(day.date)}</small></td>
             <td colspan="3">—</td>
             <td class="hrs">0.00</td>
           </tr>`;
         }
         return `<tr>
           <td class="num">${n}</td>
-          <td class="date">${formatDateFull(day.date)}</td>
+          <td class="date">${monthDayLabel(day.date)} <small>${weekdayShort(day.date)}</small></td>
           <td>${formatTime12(day.start)}</td>
           <td>${formatTime12(day.end)}</td>
           <td>${brk}</td>
@@ -592,30 +581,18 @@
       else if (net > 0) workedDays += 1;
     }
 
-    const calendarDays = days.length;
-    const avgHours = workedDays > 0 ? netHours / workedDays : 0;
     const expenseRows = expenses.filter((e) => e.description || e.amount || e.date);
     const expenseTotal = expenseRows.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
     const totalAmount = rate > 0 ? netHours * rate : 0;
     const sub = totalAmount - advance + expenseTotal;
-    const printedAt = new Date().toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
 
     const mid = Math.ceil(days.length / 2) || 0;
     const left = days.slice(0, mid);
     const right = days.slice(mid);
-    const singleCol = days.length > 0 && days.length <= 7;
-    const dayCols = singleCol
-      ? `<div>${buildPrintDayTable(days, 0)}</div>`
-      : [
-          left.length ? `<div>${buildPrintDayTable(left, 0)}</div>` : "",
-          right.length ? `<div>${buildPrintDayTable(right, mid)}</div>` : "",
-        ].join("");
+    const dayCols = [
+      left.length ? `<div>${buildPrintDayTable(left, 0)}</div>` : "",
+      right.length ? `<div>${buildPrintDayTable(right, mid)}</div>` : "",
+    ].join("");
 
     const summaryRows = [
       summaryRow("Worked Days", String(workedDays)),
@@ -660,64 +637,59 @@
     const supervisor = els.supervisor.value.trim();
     const supervisorCompany = els.supervisorCompany.value.trim();
 
-    root.className = `print-sheet${singleCol ? " compact-portrait" : ""}`;
+    root.className = "print-sheet";
     root.innerHTML = `
       <header class="ps-header">
-        <div>
+        <div class="ps-identity">
           ${company ? `<p class="ps-company">${escapeAttr(company)}</p>` : ""}
           <h1 class="ps-title">${escapeAttr(name)}</h1>
-          <p class="ps-meta">
-            ${fin ? `FIN: ${escapeAttr(fin)} · ` : ""}${escapeAttr(period || "Working Hours Logs")}
-          </p>
+          <p class="ps-meta">${fin ? `<span>FIN ${escapeAttr(fin)}</span>` : ""}${fin ? "<span class='ps-dot'>·</span>" : ""}<span>${escapeAttr(period || "Working Hours Logs")}</span></p>
         </div>
         <div class="ps-stamp">
-          Working Hours Logs<br />
-          Company: ${escapeAttr(company || "—")}<br />
-          Worker: ${escapeAttr(name)}<br />
-          FIN: ${escapeAttr(fin || "—")}<br />
-          From: ${escapeAttr(formatDateShort(els.from.value))}<br />
-          To: ${escapeAttr(formatDateShort(els.to.value))}<br />
-          Printed: ${escapeAttr(printedAt)}
+          <strong>Working Hours Logs</strong>
+          <span>${escapeAttr(formatDateShort(els.from.value))} – ${escapeAttr(formatDateShort(els.to.value))}</span>
         </div>
       </header>
 
       <section class="ps-stats">
-        <div><strong>${calendarDays}</strong><span>Days</span></div>
         <div><strong>${workedDays}</strong><span>Worked</span></div>
         <div><strong>${offDays}</strong><span>OFF</span></div>
-        <div><strong>${breakHours.toFixed(1)}</strong><span>Break Hrs</span></div>
         <div><strong>${netHours.toFixed(1)}</strong><span>Net Hrs</span></div>
-        <div><strong>${avgHours.toFixed(1)}</strong><span>Avg/Day</span></div>
-        <div><strong>${rate > 0 ? formatMoney(rate) : "—"}</strong><span>Rate/hr</span></div>
+        <div><strong>${breakHours.toFixed(1)}</strong><span>Break</span></div>
+        <div><strong>${rate > 0 ? formatMoney(rate) : "—"}</strong><span>Rate</span></div>
+        <div><strong>${formatMoney(totalAmount)}</strong><span>Amount</span></div>
+        <div class="ps-stat-balance"><strong>${formatMoney(sub)}</strong><span>Balance</span></div>
       </section>
 
-      <section class="ps-days${singleCol ? " single" : ""}">
+      <section class="ps-days">
         ${dayCols || "<p>No days in range.</p>"}
       </section>
 
       <section class="ps-footer">
-        ${expensesHTML}
-        <div>
-          <h3 class="ps-block-title">Payroll Summary</h3>
-          <div class="ps-summary">${summaryRows.join("")}</div>
+        <div class="ps-left">
+          ${expensesHTML}
           <div class="ps-signs">
             <div class="ps-sign">
-              Worker's Signature
+              <span>Worker Signature</span>
               <div class="ps-sign-line">${escapeAttr(signature)}</div>
             </div>
             <div class="ps-sign">
-              Company Name
+              <span>Company</span>
               <div class="ps-sign-line ps-company-line">${escapeAttr(company || "—")}</div>
             </div>
             <div class="ps-sign">
-              Supervisor Signature
+              <span>Supervisor Signature</span>
               <div class="ps-sign-line">${escapeAttr(supervisor)}</div>
             </div>
             <div class="ps-sign">
-              Supervisor Company Name
+              <span>Supervisor Company</span>
               <div class="ps-sign-line ps-company-line">${escapeAttr(supervisorCompany || "—")}</div>
             </div>
           </div>
+        </div>
+        <div class="ps-right">
+          <h3 class="ps-block-title">Payroll Summary</h3>
+          <div class="ps-summary">${summaryRows.join("")}</div>
         </div>
       </section>
     `;
